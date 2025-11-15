@@ -18,8 +18,6 @@ Everything runs with PyTorch, PyTorch Geometric, and Qiskit.
 
 ## 1. Repository Layout (Current State)
 
-This is the real structure you have right now:
-
 ```
 quantum_convolution_hybrid/
 │
@@ -29,13 +27,9 @@ quantum_convolution_hybrid/
 └── requirements.txt   # optional
 ```
 
-Future structure (optional) is discussed later, but the README matches your current files exactly.
-
 ---
 
 ## 2. Research Motivation
-
-We make a concrete, falsifiable hypothesis:
 
 > **A small variational quantum convolution layer can match or slightly outperform a similarly sized classical convolution kernel on molecular graph tasks.**
 
@@ -110,8 +104,6 @@ The quantum circuit is connected to PyTorch via a custom `torch.autograd.Functio
 
 The code prints **trainable parameter counts** for the kernel+head portion of each model.
 
-In your final parameter‑matched setup, you ran with:
-
 | Model      | Kernel + head trainable params |
 |-----------|---------------------------------|
 | Quantum   | 6                               |
@@ -161,8 +153,6 @@ This is exactly the kind of “credible, modest positive signal” you want to s
 
 ## 5. Figures (Where to Put Plots)
 
-When your script generates plots, you can store them under:
-
 ```
 results/
 └── figures/
@@ -171,9 +161,6 @@ results/
     ├── qm9_test_epoch.png
     └── qm9_param_matched.png
 ```
-
-Then reference them in this README:
-
 
 ![QM9 Train MSE Curve](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/71a6639f9fe7d7853e189ed28b9a52454f07054d/results/figures/qm9_train_curve.png)
 
@@ -184,7 +171,7 @@ Then reference them in this README:
 [QM9 Parameter‑Matched Comparison](Future Image)
 
 
-If you have not saved the plots yet, you can add, in `QM9_w_Graphing.py`, right before each `plt.show()`:
+you can add, in `QM9_w_Graphing.py`, right before each `plt.show()`:
 
 ```
 plt.savefig("results/figures/qm9_train_curve.png", dpi=300)
@@ -197,7 +184,7 @@ Make sure the `results/figures` folders exist.
 
 ## 6. Installation
 
-If you maintain a `requirements.txt`, a minimal version could look like:
+`requirements.txt`
 
 ```
 torch
@@ -267,7 +254,7 @@ This is a research prototype, not a production ML stack.
 
 ## 9. Future Refactor (Optional)
 
-If you later decide to modularise the code, a natural layout would be:
+If I later decide to modularise the code, a natural layout would be:
 
 ```
 quantum_convolution_hybrid/
