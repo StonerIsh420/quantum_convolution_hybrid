@@ -176,16 +176,16 @@ Then reference them in this README:
 
 ```markdown
 ## [QM9 Train MSE Curve]
-![image](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/main/results/figures/qm9_train_curve.png?raw=true)
+![image alt="QM9 Train MSE Curve"](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/main/results/figures/qm9_train_curve.png?raw=true)
 
 ## [QM9 Validation MSE per Epoch]
-![image](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/main/results/figures/qm9_val_epoch.png?raw=true)
+![image alt="QM9 Validation MSE per Epoch"](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/main/results/figures/qm9_val_epoch.png?raw=true)
 
 ## [QM9 Test MSE per Epoch]
-![image](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/main/results/figures/qm9_test_epoch.png?raw=true)
+![image alt="QM9 Test MSE per Epoch"](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/main/results/figures/qm9_test_epoch.png?raw=true)
 
 ## [QM9 Parameter‑Matched Comparison]
-![image](./results/figures/qm9_param_matched.png)
+![image alt="QM9 Parameter-Matched Comparison"](./results/figures/qm9_param_matched.png)
 ```
 
 If you have not saved the plots yet, you can add, in `QM9_w_Graphing.py`, right before each `plt.show()`:
