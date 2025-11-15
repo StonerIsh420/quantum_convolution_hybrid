@@ -18,18 +18,19 @@ from qiskit.primitives import StatevectorEstimator
 # 0. High-level configuration
 # =========================================================
 
-N_MOLECULES = 500         # how many QM9 molecules to use
+# Increase data + repetitions to strengthen statistical evidence
+N_MOLECULES = 1000        # how many QM9 molecules to use
 BATCH_SIZE = 1            # graphs per batch (1 keeps the quantum call simple)
-EPOCHS = 3
-NUM_SEEDS = 3
+EPOCHS = 5
+NUM_SEEDS = 7
 
 NUM_HOPS = 1              # k-hop neighbourhood for each atom
 MAX_PATCH_SIZE = 4        # number of neighbours per patch
 
 N_QUBITS = 4              # quantum kernel width (also patch_dim after compression)
-CLASS_HIDDEN = 4          # hidden width in classical kernel (gives it *more* params)
+CLASS_HIDDEN = 4          # hidden width in classical kernel (still more params than quantum)
 
-LR = 5e-3                 # shared learning rate
+LR = 3e-3                 # shared learning rate (slightly smaller for stability)
 
 DEVICE = torch.device("cpu")
 
@@ -145,12 +146,14 @@ class QuantumFunction(torch.autograd.Function):
             res_m = estimator.run([(qc, observable, p_neg)]).result()[0].data.evs
 
             grads.append(
-                torch.tensor((res_p - res_m) / 2,
-                             dtype=torch.float32,
-                             device=input_data.device)
+                torch.tensor(
+                    (res_p - res_m) / 2,
+                    dtype=torch.float32,
+                    device=input_data.device,
+                )
             )
 
-        grad_w = torch.stack(grads, dim=1)       # [B_flat, n_weights]
+        grad_w = torch.stack(grads, dim=1)  # [B_flat, n_weights]
 
         # weights are shared, so we sum gradient contributions across the batch
         grad_w = (grad_output.unsqueeze(1) * grad_w).sum(dim=0)
@@ -223,7 +226,7 @@ class HybridRegressor(nn.Module):
 
         # global mean pooling over atoms -> [B, 1]
         graph_feat = node_feats.mean(dim=1, keepdim=True)
-        return self.regressor(graph_feat)      # [B, 1]
+        return self.regressor(graph_feat)  # [B, 1]
 
 
 class ClassicalRegressor(nn.Module):
@@ -242,11 +245,11 @@ class ClassicalRegressor(nn.Module):
     def forward(self, x_patches: torch.Tensor) -> torch.Tensor:
         bsz, num_nodes, patch_size, _ = x_patches.shape
 
-        x = torch.tanh(self.compressor(x_patches))      # [B, N, P, 1]
-        k = torch.tanh(self.kernel(x))                  # [B, N, P, H]
-        patch_feat = k.mean(dim=2)                      # [B, N, H]
-        graph_feat = patch_feat.mean(dim=1)             # [B, H]
-        return self.regressor(graph_feat)               # [B, 1]
+        x = torch.tanh(self.compressor(x_patches))  # [B, N, P, 1]
+        k = torch.tanh(self.kernel(x))              # [B, N, P, H]
+        patch_feat = k.mean(dim=2)                  # [B, N, H]
+        graph_feat = patch_feat.mean(dim=1)         # [B, H]
+        return self.regressor(graph_feat)           # [B, 1]
 
 
 # =========================================================
@@ -386,7 +389,7 @@ q_all_steps = np.array(q_all_steps)  # [NUM_SEEDS * EPOCHS, n_train_steps]
 c_all_steps = np.array(c_all_steps)
 
 mean_q = q_all_steps.mean(axis=0)
-mean_c = c_all_steps.mean(axis=0)
+mean_c = q_all_steps.mean(axis=0)
 
 plt.figure(figsize=(10, 5))
 plt.plot(
@@ -483,3 +486,23 @@ plt.tight_layout()
 test_fig_path = os.path.join(FIG_DIR, "qm9_test_epoch.png")
 plt.savefig(test_fig_path, dpi=200)
 plt.show()
+
+# =========================================================
+# 7. Best-epoch summary (per seed, chosen by validation MSE)
+# =========================================================
+
+best_q_idx = val_q_arr.argmin(axis=1)  # [NUM_SEEDS]
+best_c_idx = val_c_arr.argmin(axis=1)
+
+q_best_test = test_q_arr[np.arange(NUM_SEEDS), best_q_idx]
+c_best_test = test_c_arr[np.arange(NUM_SEEDS), best_c_idx]
+
+print("\n=== Best-epoch (per seed, chosen by val MSE) summary ===")
+print(
+    f"Quantum Hybrid:  test MSE = {q_best_test.mean():.4f} "
+    f"± {q_best_test.std():.4f}"
+)
+print(
+    f"Classical Base: test MSE = {c_best_test.mean():.4f} "
+    f"± {c_best_test.std():.4f}"
+)
