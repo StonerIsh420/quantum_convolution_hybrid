@@ -1,3 +1,4 @@
+import os
 import math
 import numpy as np
 import torch
@@ -31,6 +32,10 @@ CLASS_HIDDEN = 4          # hidden width in classical kernel (gives it *more* pa
 LR = 5e-3                 # shared learning rate
 
 DEVICE = torch.device("cpu")
+
+# where to save figures for the README
+FIG_DIR = os.path.join("results", "figures")
+os.makedirs(FIG_DIR, exist_ok=True)
 
 # =========================================================
 # 1. Data: QM9 subset and patch extraction
@@ -171,24 +176,31 @@ class HybridRegressor(nn.Module):
         for p in self.compressor.parameters():
             p.requires_grad = False
 
-        # 4-qubit variational kernel
+        # 4-qubit variational kernel with TWO entangling layers
         self.qc = QuantumCircuit(N_QUBITS)
         self.input_params = ParameterVector("x", N_QUBITS)
-        self.weight_params = ParameterVector("w", N_QUBITS)
+        self.weight_params_1 = ParameterVector("w1", N_QUBITS)
+        self.weight_params_2 = ParameterVector("w2", N_QUBITS)
 
         # encode patch scalars onto qubits
         for i in range(N_QUBITS):
             self.qc.ry(self.input_params[i], i)
 
-        # simple entangling layer + trainable Rx
+        # first entangling layer
         for i in range(N_QUBITS):
             self.qc.cz(i, (i + 1) % N_QUBITS)
-            self.qc.rx(self.weight_params[i], i)
+            self.qc.rx(self.weight_params_1[i], i)
+
+        # second entangling layer (extra expressivity)
+        for i in range(N_QUBITS):
+            self.qc.cz(i, (i + 1) % N_QUBITS)
+            self.qc.rx(self.weight_params_2[i], i)
 
         self.estimator = StatevectorEstimator()
         self.observable = SparsePauliOp.from_list([("Z" * N_QUBITS, 1.0)])
 
-        self.q_weights = nn.Parameter(torch.rand(N_QUBITS) * np.pi)
+        n_weights = len(self.weight_params_1) + len(self.weight_params_2)
+        self.q_weights = nn.Parameter(torch.rand(n_weights) * np.pi)
 
         # graph-level regressor (1 scalar per graph)
         self.regressor = nn.Linear(1, 1)
@@ -203,14 +215,15 @@ class HybridRegressor(nn.Module):
         # flatten nodes for the quantum call: [B*N, P]
         flat = compressed.view(bsz * num_nodes, patch_size)
 
-        q_out = QuantumFunction.apply(flat, self.q_weights,
-                                      self.estimator, self.qc, self.observable)
+        q_out = QuantumFunction.apply(
+            flat, self.q_weights, self.estimator, self.qc, self.observable
+        )
         # [B*N] -> [B, N]
         node_feats = q_out.view(bsz, num_nodes)
 
         # global mean pooling over atoms -> [B, 1]
         graph_feat = node_feats.mean(dim=1, keepdim=True)
-        return self.regressor(graph_feat)
+        return self.regressor(graph_feat)      # [B, 1]
 
 
 class ClassicalRegressor(nn.Module):
@@ -233,7 +246,7 @@ class ClassicalRegressor(nn.Module):
         k = torch.tanh(self.kernel(x))                  # [B, N, P, H]
         patch_feat = k.mean(dim=2)                      # [B, N, H]
         graph_feat = patch_feat.mean(dim=1)             # [B, H]
-        return self.regressor(graph_feat).unsqueeze(1)  # [B, 1]
+        return self.regressor(graph_feat)               # [B, 1]
 
 
 # =========================================================
@@ -260,11 +273,11 @@ def train_one_epoch(q_model, c_model, loader, q_opt, c_opt, criterion):
 
     for batch in loader:
         patches = extract_patches(batch).unsqueeze(0).to(DEVICE)
-        target = batch.y[:, 0].unsqueeze(1).to(DEVICE)
+        target = batch.y[:, 0].unsqueeze(1).to(DEVICE)  # [B, 1]
 
         # quantum
         q_opt.zero_grad()
-        out_q = q_model(patches)
+        out_q = q_model(patches)                        # [B, 1]
         loss_q = criterion(out_q, target)
         loss_q.backward()
         q_opt.step()
@@ -272,7 +285,7 @@ def train_one_epoch(q_model, c_model, loader, q_opt, c_opt, criterion):
 
         # classical
         c_opt.zero_grad()
-        out_c = c_model(patches)
+        out_c = c_model(patches)                        # [B, 1]
         loss_c = criterion(out_c, target)
         loss_c.backward()
         c_opt.step()
@@ -366,7 +379,7 @@ for seed in range(NUM_SEEDS):
         test_c_all.append(test_c)
 
 # =========================================================
-# 6. Aggregate and plot
+# 6. Aggregate and plot (and save figures)
 # =========================================================
 
 q_all_steps = np.array(q_all_steps)  # [NUM_SEEDS * EPOCHS, n_train_steps]
@@ -395,6 +408,8 @@ plt.title("QM9 Regression: Quantum vs Classical (train MSE, averaged over seeds)
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
+train_fig_path = os.path.join(FIG_DIR, "qm9_train_curve.png")
+plt.savefig(train_fig_path, dpi=200)
 plt.show()
 
 # reshape per-epoch metrics: [NUM_SEEDS, EPOCHS]
@@ -438,6 +453,8 @@ plt.title("Validation MSE over epochs (mean ± std over seeds)")
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
+val_fig_path = os.path.join(FIG_DIR, "qm9_val_epoch.png")
+plt.savefig(val_fig_path, dpi=200)
 plt.show()
 
 plt.figure(figsize=(10, 5))
@@ -463,4 +480,6 @@ plt.title("Test MSE over epochs (mean ± std over seeds)")
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
+test_fig_path = os.path.join(FIG_DIR, "qm9_test_epoch.png")
+plt.savefig(test_fig_path, dpi=200)
 plt.show()
