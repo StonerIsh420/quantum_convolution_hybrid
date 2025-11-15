@@ -181,7 +181,7 @@ Then reference them in this README:
 
 ![QM9 Test MSE per Epoch](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/150f90d3d2d8d07af66911d1faf001393efb631b/results/figures/qm9_test_epoch.png)
 
-![QM9 Parameter‑Matched Comparison]()
+[QM9 Parameter‑Matched Comparison](Future Image)
 
 
 If you have not saved the plots yet, you can add, in `QM9_w_Graphing.py`, right before each `plt.show()`:
