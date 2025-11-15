@@ -20,7 +20,7 @@ Everything runs with PyTorch, PyTorch Geometric, and Qiskit.
 
 This is the real structure you have right now:
 
-```text
+```
 quantum_convolution_hybrid/
 │
 ├── MUTAG_test.py
@@ -163,7 +163,7 @@ This is exactly the kind of “credible, modest positive signal” you want to s
 
 When your script generates plots, you can store them under:
 
-```text
+```
 results/
 └── figures/
     ├── qm9_train_curve.png
@@ -174,7 +174,7 @@ results/
 
 Then reference them in this README:
 
-```markdown
+
 ![QM9 Train MSE Curve](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/150f90d3d2d8d07af66911d1faf001393efb631b/results/figures/qm9_train_curve.png)
 
 ![QM9 Validation MSE per Epoch](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/150f90d3d2d8d07af66911d1faf001393efb631b/results/figures/qm9_val_epoch.png)
@@ -182,11 +182,11 @@ Then reference them in this README:
 ![QM9 Test MSE per Epoch](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/150f90d3d2d8d07af66911d1faf001393efb631b/results/figures/qm9_test_epoch.png)
 
 ![QM9 Parameter‑Matched Comparison](./results/figures/qm9_param_matched.png)
-```
+
 
 If you have not saved the plots yet, you can add, in `QM9_w_Graphing.py`, right before each `plt.show()`:
 
-```python
+```
 plt.savefig("results/figures/qm9_train_curve.png", dpi=300)
 # or the appropriate filename per plot
 ```
@@ -199,7 +199,7 @@ Make sure the `results/figures` folders exist.
 
 If you maintain a `requirements.txt`, a minimal version could look like:
 
-```text
+```
 torch
 torch-geometric
 qiskit
@@ -209,7 +209,7 @@ matplotlib
 
 ### Install steps
 
-```bash
+```
 python -m venv .venv
 # Windows:
 #   .venv\Scripts\activate
@@ -227,7 +227,7 @@ pip install -r requirements.txt
 
 ### MUTAG Classification
 
-```bash
+```
 python MUTAG_test.py
 ```
 
@@ -239,7 +239,7 @@ This will:
 
 ### QM9 Regression
 
-```bash
+```
 python QM9_w_Graphing.py
 ```
 
@@ -269,7 +269,7 @@ This is a research prototype, not a production ML stack.
 
 If you later decide to modularise the code, a natural layout would be:
 
-```text
+```
 quantum_convolution_hybrid/
 │
 ├── models/
@@ -300,7 +300,7 @@ For now, everything living in `MUTAG_test.py` and `QM9_w_Graphing.py` is perfect
 
 If you use this work in academic writing, a simple software citation is:
 
-```text
+```
 @software{quantum_convolution_hybrid,
   title   = {Hybrid Quantum Convolution on Molecular Graphs},
   author  = {Stoner},
