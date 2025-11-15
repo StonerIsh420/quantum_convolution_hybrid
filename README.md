@@ -175,13 +175,13 @@ results/
 Then reference them in this README:
 
 ```markdown
-![QM9 Train MSE Curve](results/figures/qm9_train_curve.png)
+![QM9 Train MSE Curve](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/main/results/figures/qm9_train_curve.png)
 
-![QM9 Validation MSE per Epoch](results/figures/qm9_val_epoch.png)
+![QM9 Validation MSE per Epoch](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/main/results/figures/qm9_val_epoch.png)
 
-![QM9 Test MSE per Epoch](results/figures/qm9_test_epoch.png)
+![QM9 Test MSE per Epoch](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/main/results/figures/qm9_val_epoch.png)
 
-![QM9 Parameter‑Matched Comparison](results/figures/qm9_param_matched.png)
+![QM9 Parameter‑Matched Comparison](https://github.com/StonerIsh420/quantum_convolution_hybrid/blob/main/results/figures/qm9_test_epoch.png)
 ```
 
 If you have not saved the plots yet, you can add, in `QM9_w_Graphing.py`, right before each `plt.show()`:
