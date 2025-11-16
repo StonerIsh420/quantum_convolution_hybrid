@@ -1,3 +1,7 @@
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-green)
+![Status](https://img.shields.io/badge/status-validated-brightgreen)
+
 # Quantum Convolution Hybrid  
 A Hybrid Quantum–Classical GNN Framework for Molecular Learning
 
