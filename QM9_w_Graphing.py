@@ -28,7 +28,7 @@ NUM_HOPS = 1              # k-hop neighbourhood for each atom
 MAX_PATCH_SIZE = 4        # number of neighbours per patch
 
 N_QUBITS = 4              # quantum kernel width (also patch_dim after compression)
-CLASS_HIDDEN = 4          # hidden width in classical kernel (still more params than quantum)
+CLASS_HIDDEN = 3          # hidden width in classical kernel (≈ quantum param count)
 
 LR = 3e-3                 # shared learning rate (slightly smaller for stability)
 
@@ -179,11 +179,12 @@ class HybridRegressor(nn.Module):
         for p in self.compressor.parameters():
             p.requires_grad = False
 
-        # 4-qubit variational kernel with TWO entangling layers
+        # 4-qubit variational kernel with THREE entangling layers
         self.qc = QuantumCircuit(N_QUBITS)
         self.input_params = ParameterVector("x", N_QUBITS)
         self.weight_params_1 = ParameterVector("w1", N_QUBITS)
         self.weight_params_2 = ParameterVector("w2", N_QUBITS)
+        self.weight_params_3 = ParameterVector("w3", N_QUBITS)
 
         # encode patch scalars onto qubits
         for i in range(N_QUBITS):
@@ -194,15 +195,24 @@ class HybridRegressor(nn.Module):
             self.qc.cz(i, (i + 1) % N_QUBITS)
             self.qc.rx(self.weight_params_1[i], i)
 
-        # second entangling layer (extra expressivity)
+        # second entangling layer
         for i in range(N_QUBITS):
             self.qc.cz(i, (i + 1) % N_QUBITS)
             self.qc.rx(self.weight_params_2[i], i)
 
+        # third entangling layer (extra expressivity)
+        for i in range(N_QUBITS):
+            self.qc.cz(i, (i + 1) % N_QUBITS)
+            self.qc.rx(self.weight_params_3[i], i)
+
         self.estimator = StatevectorEstimator()
         self.observable = SparsePauliOp.from_list([("Z" * N_QUBITS, 1.0)])
 
-        n_weights = len(self.weight_params_1) + len(self.weight_params_2)
+        n_weights = (
+            len(self.weight_params_1)
+            + len(self.weight_params_2)
+            + len(self.weight_params_3)
+        )
         self.q_weights = nn.Parameter(torch.rand(n_weights) * np.pi)
 
         # graph-level regressor (1 scalar per graph)
@@ -232,24 +242,29 @@ class HybridRegressor(nn.Module):
 class ClassicalRegressor(nn.Module):
     """Purely classical control model.
 
-    We give this model a *larger* kernel+head than the hybrid, so any hybrid
-    advantage is conservative.
+    We keep the same depth as the quantum kernel (two non-linear layers),
+    but shrink the hidden width so the total kernel+head params are close
+    to the hybrid model.
     """
     def __init__(self, n_feats: int):
         super().__init__()
         self.compressor = nn.Linear(n_feats, 1)
 
-        self.kernel = nn.Linear(1, CLASS_HIDDEN)
+        # Two-layer tanh kernel with small hidden width
+        self.kernel1 = nn.Linear(1, CLASS_HIDDEN)
+        self.kernel2 = nn.Linear(CLASS_HIDDEN, CLASS_HIDDEN)
         self.regressor = nn.Linear(CLASS_HIDDEN, 1)
 
     def forward(self, x_patches: torch.Tensor) -> torch.Tensor:
         bsz, num_nodes, patch_size, _ = x_patches.shape
 
-        x = torch.tanh(self.compressor(x_patches))  # [B, N, P, 1]
-        k = torch.tanh(self.kernel(x))              # [B, N, P, H]
-        patch_feat = k.mean(dim=2)                  # [B, N, H]
-        graph_feat = patch_feat.mean(dim=1)         # [B, H]
-        return self.regressor(graph_feat)           # [B, 1]
+        x = torch.tanh(self.compressor(x_patches))   # [B, N, P, 1]
+        k1 = torch.tanh(self.kernel1(x))             # [B, N, P, H]
+        k2 = torch.tanh(self.kernel2(k1))            # [B, N, P, H]
+
+        patch_feat = k2.mean(dim=2)                  # [B, N, H]
+        graph_feat = patch_feat.mean(dim=1)          # [B, H]
+        return self.regressor(graph_feat)            # [B, 1]
 
 
 # =========================================================
@@ -389,7 +404,7 @@ q_all_steps = np.array(q_all_steps)  # [NUM_SEEDS * EPOCHS, n_train_steps]
 c_all_steps = np.array(c_all_steps)
 
 mean_q = q_all_steps.mean(axis=0)
-mean_c = q_all_steps.mean(axis=0)
+mean_c = c_all_steps.mean(axis=0)
 
 plt.figure(figsize=(10, 5))
 plt.plot(
